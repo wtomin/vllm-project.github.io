@@ -3,7 +3,7 @@ layout: post
 title: "使用 VeRL-Omni 与 vLLM-Omni 对 MiniMax-H3 进行音视频强化学习后训练"
 author: "VeRL-Omni Team"
 summary: "介绍如何使用 DiffusionNFT、VeRL-Omni 与 vLLM-Omni 跑通 MiniMax-H3 的 T2VA 和 FL2VA 在线强化学习后训练，并解决 rollout 性能与训推一致性问题。"
-image: /assets/logos/vllm-logo-text-light.png
+image: /assets/figures/2026-09-18-minimax-rl/cover.png
 tags:
   - multimodal
   - rlhf
