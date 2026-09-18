@@ -48,7 +48,7 @@ DiffusionNFT 不需要在 rollout 端记录每一步 transition 的 log-prob，�
 
 下图汇总了两条任务路径：上半部分是 T2VA / FL2VA 的条件输入和 H3 rollout；中间是音画 reward 和训练数据格式；下半部分是 DiffusionNFT 的前向过程优化，以及 old policy 的刷新。阅读时需要区分两条数据流：**用于评分的解码视频/音频流向 CLAP 与 ImageBind；用于 actor 更新的 clean latents、timestep 与条件元数据流向 FSDP2。**
 
-![](/assets/figures/2026-09-18-minimax-h3-rl/image.png)
+![](/assets/figures/2026-09-18-minimax-rl/image.png)
 
 上图展示了系统分层和主要数据流。目前 DiffusionNFT 默认使用**全局标准差 reward 归一化**。rollout policy 的更新细节见第 4.2 节。
 
@@ -268,23 +268,23 @@ bash examples/diffusionnft_trainer/minimax_h3/run_minimax_h3_fl2va_lora.sh
 
 训练端的平均 reward 从约 0.27 稳步上升到 0.4 以上，说明在当前 prompt 分布下，CLAP + ImageBind 的联合信号能够形成可学习的组内偏好。该指标只能说明 reward model 偏好的方向得到了优化，不能单独解释为画面美学或长程一致性有所提升。
 
-![训练 reward 曲线](/assets/figures/2026-09-18-minimax-h3-rl/train-reward.png)
+![训练 reward 曲线](/assets/figures/2026-09-18-minimax-rl/train-reward.png)
 
 actor 的动态需要与 reward 结合分析。尤其要关注梯度范数（grad norm）、reward probability 和 reference KL（ref KL）：如果 reward 上升，但梯度范数持续异常、reward probability 饱和，或者 ref KL 突然失效，曲线仍可能收敛到错误目标。
 
-![actor 训练动态](/assets/figures/2026-09-18-minimax-h3-rl/actor-training-dynamics.png)
+![actor 训练动态](/assets/figures/2026-09-18-minimax-rl/actor-training-dynamics.png)
 
 ### 7.2 验证 reward 分解
 
 验证集分别记录 CLAP、ImageBind 和 weighted reward。**只有两个子 reward 的变化方向与固定样本视频一致时，combined reward 才具有解释价值。** 例如，如果 combined reward 的提升只来自 CLAP，可能说明声音更贴合文本，但不能证明音画关系或视觉质量也一同提升。
 
-![评估 reward 曲线](/assets/figures/2026-09-18-minimax-h3-rl/eval-reward.png)
+![评估 reward 曲线](/assets/figures/2026-09-18-minimax-rl/eval-reward.png)
 
 ### 7.3 训练耗时分析：rollout 和 reward 的吞吐瓶颈
 
 端到端耗时拆分为 rollout、reward、actor update 和 checkpoint。
 
-![各阶段耗时](/assets/figures/2026-09-18-minimax-h3-rl/time-consumption.png)
+![各阶段耗时](/assets/figures/2026-09-18-minimax-rl/time-consumption.png)
 
 从耗时分解来看，rollout 和 reward 合计占据端到端耗时的大头，actor update 和 checkpoint 的占比相对较小。因此，端到端优化需要降低单条 rollout 的耗时、提高 rollout 吞吐，并使 reward 吞吐与之匹配。
 
@@ -300,10 +300,10 @@ reward 曲线只能反映数值层面的整体趋势，最终仍需回到生成�
 
 | ID | Prompt | MiniMax H3 (base) | MiniMax H3 + DiffusionNFT |
 |---:|---|---|---|
-| 1 | stickman monigote shooting a energy sphere from his hands | [01-stickman-base.mp4](/assets/figures/2026-09-18-minimax-h3-rl/01-stickman-base.mp4) | [01-stickman-DiffusionNFT.mp4](/assets/figures/2026-09-18-minimax-h3-rl/01-stickman-DiffusionNFT.mp4) |
-| 2 | a husky dog with sunglasses riding on santas sled | [02-husky-base.mp4](/assets/figures/2026-09-18-minimax-h3-rl/02-husky-base.mp4) | [02-husky-DiffusionNFT.mp4](/assets/figures/2026-09-18-minimax-h3-rl/02-husky-DiffusionNFT.mp4) |
-| 3 | minimalist polygonal human skull in green flames with strong movement, uhd | [03-skull-base.mp4](/assets/figures/2026-09-18-minimax-h3-rl/03-skull-base.mp4) | [03-skull-DiffusionNFT.mp4](/assets/figures/2026-09-18-minimax-h3-rl/03-skull-DiffusionNFT.mp4) |
-| 4 | 17th century sailing ship making a path through the waves during a storm | [04-ship-base.mp4](/assets/figures/2026-09-18-minimax-h3-rl/04-ship-base.mp4) | [04-ship-DiffusionNFT.mp4](/assets/figures/2026-09-18-minimax-h3-rl/04-ship-DiffusionNFT.mp4) |
+| 1 | stickman monigote shooting a energy sphere from his hands | ![01-stickman-base](/assets/figures/2026-09-18-minimax-rl/01-stickman-base.gif) | ![01-stickman-DiffusionNFT](/assets/figures/2026-09-18-minimax-rl/01-stickman-DiffusionNFT.gif) |
+| 2 | a husky dog with sunglasses riding on santas sled | ![02-husky-base](/assets/figures/2026-09-18-minimax-rl/02-husky-base.gif) | ![02-husky-DiffusionNFT](/assets/figures/2026-09-18-minimax-rl/02-husky-DiffusionNFT.gif) |
+| 3 | minimalist polygonal human skull in green flames with strong movement, uhd | ![03-skull-base](/assets/figures/2026-09-18-minimax-rl/03-skull-base.gif) | ![03-skull-DiffusionNFT](/assets/figures/2026-09-18-minimax-rl/03-skull-DiffusionNFT.gif) |
+| 4 | 17th century sailing ship making a path through the waves during a storm | ![04-ship-base](/assets/figures/2026-09-18-minimax-rl/04-ship-base.gif) | ![04-ship-DiffusionNFT](/assets/figures/2026-09-18-minimax-rl/04-ship-DiffusionNFT.gif) |
 
 ### 7.5 视频对比：FL2VA 首帧条件下 Base 与 DiffusionNFT
 
@@ -317,8 +317,8 @@ T2VA 只约束文本和音视频的语义关系，FL2VA 还要求模型服从给
 
 | ID | 条件首帧 | Prompt | MiniMax H3 (base) | MiniMax H3 + FL2VA DiffusionNFT |
 |---:|---|---|---|---|
-| 23 | ![红瓶条件首帧](/assets/figures/2026-09-18-minimax-h3-rl/fl2va-23-bottle-condition.jpg) | Shows a close-up of a woman holding a red bottle with a blue substance dripping from it.<br />一名女子手持红瓶子的特写，蓝色液体正从瓶中滴落。 | [fl2va-23-bottle-base.mp4](/assets/figures/2026-09-18-minimax-h3-rl/fl2va-23-bottle-base.mp4) | [fl2va-23-bottle-DiffusionNFT.mp4](/assets/figures/2026-09-18-minimax-h3-rl/fl2va-23-bottle-DiffusionNFT.mp4) |
-| 56 | ![水池条件首帧](/assets/figures/2026-09-18-minimax-h3-rl/fl2va-56-pool-condition.jpg) | Shows a man wearing a white shirt, brown apron, and a white hat standing in a pool filled with water.<br />一名穿白衬衫、棕色围裙、戴白帽的男子站在装满水的池子里。 | [fl2va-56-pool-base.mp4](/assets/figures/2026-09-18-minimax-h3-rl/fl2va-56-pool-base.mp4) | [fl2va-56-pool-DiffusionNFT.mp4](/assets/figures/2026-09-18-minimax-h3-rl/fl2va-56-pool-DiffusionNFT.mp4) |
+| 23 | ![红瓶条件首帧](/assets/figures/2026-09-18-minimax-rl/fl2va-23-bottle-condition.jpg) | Shows a close-up of a woman holding a red bottle with a blue substance dripping from it.<br />一名女子手持红瓶子的特写，蓝色液体正从瓶中滴落。 | ![fl2va-23-bottle-base](/assets/figures/2026-09-18-minimax-rl/fl2va-23-bottle-base.gif) | ![fl2va-23-bottle-DiffusionNFT](/assets/figures/2026-09-18-minimax-rl/fl2va-23-bottle-DiffusionNFT.gif) |
+| 56 | ![水池条件首帧](/assets/figures/2026-09-18-minimax-rl/fl2va-56-pool-condition.jpg) | Shows a man wearing a white shirt, brown apron, and a white hat standing in a pool filled with water.<br />一名穿白衬衫、棕色围裙、戴白帽的男子站在装满水的池子里。 | ![fl2va-56-pool-base](/assets/figures/2026-09-18-minimax-rl/fl2va-56-pool-base.gif) | ![fl2va-56-pool-DiffusionNFT](/assets/figures/2026-09-18-minimax-rl/fl2va-56-pool-DiffusionNFT.gif) |
 
 需要说明的是，这里展示的是 FL2VA 集成验证阶段的定性对比，样本量有限。它只能说明条件帧链路和后训练更新确实在生成结果上带来了可见差异，不能作为条件生成质量的完整 benchmark。
 
